@@ -10,7 +10,10 @@ from .dlirs import DLIRS
 from .cacheus import Cacheus
 from .arcalecar import ARCALeCaR
 from .lirsalecar import LIRSALeCaR
-
+from .olecar import OLeCaR
+from .sample import Sample
+from .prioqueue import PrioQueue
+from .adasample import AdaSample
 
 def get_algorithm(alg_name):
     alg_name = alg_name.lower()
@@ -39,4 +42,12 @@ def get_algorithm(alg_name):
         return ARCALeCaR
     if alg_name == 'lirsalecar':
         return LIRSALeCaR
+    if alg_name == 'olecar':
+        return OLeCaR
+    if alg_name == 'sample':
+        return Sample
+    if alg_name == 'prioqueue':
+        return PrioQueue
+    if alg_name == 'adasample':
+        return AdaSample
     return None

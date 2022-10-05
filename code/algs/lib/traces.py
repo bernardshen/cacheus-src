@@ -65,6 +65,25 @@ class Trace:
         return len(self.reuse)
 
 
+class TwitterTrace(Trace):
+    _ts         = 0
+    _key        = 1
+    _key_sz     = 2
+    _val_sz     = 3
+    _client_id  = 4
+    _op         = 5
+    _ttl        = 6
+    def inDuration(self, time):
+        return True
+    
+    def readLine(self, line):
+        line = line.split(',')
+        ts  = line[TwitterTrace._ts]
+        key = line[TwitterTrace._key]
+        op  = line[TwitterTrace._op]
+        write = op not in ['get', 'gets']
+        yield key, write, ts
+
 class FIUTrace(Trace):
     def inDuration(self, time):
         if self.duration == 0:
@@ -267,6 +286,8 @@ def get_trace_reader(trace_type):
         return SynthTrace
     if trace_type == 'physics':
         return CloudPhysics
+    if trace_type == 'twitter':
+        return TwitterTrace
     raise ValueError("Could not find trace reader for {}".format(trace_type))
 
 
@@ -285,6 +306,8 @@ def identify_trace(filename):
         return 'synth'
     if filename.endswith('.itrace'):
         return 'physics'
+    if filename.endswith('.twitter'):
+        return 'twitter'
     raise ValueError("Could not identify trace type of {}".format(filename))
 
 
