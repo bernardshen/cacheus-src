@@ -28,15 +28,18 @@ class ParaAdaSample:
         self.num_clients = 2
         self.merge_thresh = 0.1
         self.reward_type = "olecar"
+        self.history_type = "global"
         
         print(self.experts, kwargs)
-        process_kwargs(self, kwargs, ['experts', 'num_samples', 'num_clients', 'merge_thresh', 'reward_type'])
+        process_kwargs(self, kwargs, ['experts', 'num_samples', 'num_clients', 
+                       'merge_thresh', 'reward_type', 'history_type'])
 
         self.cache = RandomDict()
         self.prioInsts = [[get_priority(i)() for i in self.experts] for _ in range(self.num_clients)]
 
-        self.history_size = cache_size // self.num_clients
+        self.history_size = cache_size // self.num_clients if self.history_type == 'local' else cache_size // 8
         self.hist = [DequeDict() for _ in range(self.num_clients)]
+        self.ghist = DequeDict()
 
         self.initial_weight = 1 / len(self.experts)
         self.learning_rate = 0.45
@@ -51,6 +54,7 @@ class ParaAdaSample:
         self.client_panelty_cnt = [0 for _ in range(self.num_clients)]
         self.client_merge_cnt = [0 for _ in range(self.num_clients)]
         self.client_time = [0 for _ in range(self.num_clients)]
+        self.client_reward_hist = [[] for _ in range(self.num_clients)]
 
         process_kwargs(self, kwargs, acceptable_kws=['learning_rate', 'merge_thresh'])
 
@@ -77,7 +81,7 @@ class ParaAdaSample:
         self.cache[oblock] = x
     
     def addToHistory(self, x, cid):
-        hist = self.hist[cid]
+        hist = self.hist[cid] if self.history_type == 'local' else self.ghist
         if len(hist) == self.history_size:
             evicted = self.getLRU(hist)
             del hist[evicted.oblock]
@@ -130,7 +134,7 @@ class ParaAdaSample:
         for i in range(len(candidates)):
             if victim == candidates[i]:
                 victimEnt.experts.append(i)
-        victimEnt.evicted_time = self.client_time[cid]
+        victimEnt.evicted_time = self.client_time[cid] if self.history_type == 'local' else self.time
         self.pollution.remove(victimEnt.oblock)
         self.addToHistory(victimEnt, cid)
         for inst in self.prioInsts[cid]:
@@ -138,6 +142,7 @@ class ParaAdaSample:
         return victimEnt.oblock
 
     def adjustWeights(self, rewards, cid):
+        self.client_reward_hist[cid].append(rewards)
         reward = np.array(rewards, dtype=np.float32)
         self.client_new_W[cid] = self.client_new_W[cid] * np.exp(self.learning_rate * reward)
         for i in range(len(self.experts)):
@@ -146,19 +151,30 @@ class ParaAdaSample:
             elif self.client_new_W[cid][i] < 0.01:
                 self.client_new_W[cid][i] = 0.01
         self.client_new_W[cid] = self.client_new_W[cid] / np.sum(self.client_new_W[cid])
+
+        # Occationally sync global
+        if np.random.rand() < 0.2:
+            self.client_old_W[cid] = self.W
         err = np.sum(np.abs(self.client_new_W[cid] - self.client_old_W[cid]))
         if err > self.merge_thresh or np.random.rand() < 0.1:
-            delta = self.client_new_W[cid] - self.client_old_W[cid]
-            self.W += delta / self.num_clients
+            for r in self.client_reward_hist[cid]:
+                r = np.array(r, dtype=np.float32)
+                self.W = self.W * np.exp(self.learning_rate * r)
+            for i in range(len(self.experts)):
+                self.W[i] = 0.99 if self.W[i] > 0.99 else self.W[i]
+                self.W[i] = 0.01 if self.W[i] < 0.01 else self.W[i]
             self.W = self.W / np.sum(self.W)
             self.client_old_W[cid] = self.W
+            self.client_new_W[cid] = self.W
             self.client_merge_cnt[cid] += 1
+            self.client_reward_hist[cid] = []
         
     def getReward(self, entry: AdaSample_Entry, cid):
+        pTime = self.client_time[cid] if self.history_type == 'local' else self.time
         if self.reward_type == "olecar":
-            return -self.discount_rate / (self.client_time[cid] - entry.evicted_time)
+            return -self.discount_rate / (pTime - entry.evicted_time)
         elif self.reward_type == "lecar":
-            return -self.discount_rate ** (self.client_time[cid] - entry.evicted_time)
+            return -self.discount_rate ** (pTime - entry.evicted_time)
         assert(0)
         return 0
 
@@ -166,7 +182,7 @@ class ParaAdaSample:
         evicted = None
         freq = 1
 
-        hist = self.hist[cid]
+        hist = self.hist[cid] if self.history_type == 'local' else self.ghist
         self.cleint_miss_cnt[cid] += 1
 
         if oblock in hist:
@@ -178,8 +194,8 @@ class ParaAdaSample:
                 if i not in entry.experts:
                     continue
                 rewards[i] = self.getReward(entry, cid)
-                # rewards[i] = -(self.discount_rate) / (self.client_time[cid] - entry.evicted_time)
             self.adjustWeights(rewards, cid)
+            # del hist[oblock]
         
         if len(self.cache) == self.cache_size:
             evicted = self.evict(cid)

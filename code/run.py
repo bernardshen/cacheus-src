@@ -62,6 +62,7 @@ class AlgorithmTest:
                 fname += '-r{}'.format(self.alg_args['reward_type'])
             if self.algorithm == 'paraadasample':
                 fname += '-c{}'.format(self.alg_args['num_clients'])
+                fname += '-h{}'.format(self.alg_args['history_type'])
             fname += '.json'
             with open(fname, 'w') as f:
                 json.dump(w_hist, f)

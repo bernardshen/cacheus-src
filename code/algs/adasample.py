@@ -152,6 +152,7 @@ class AdaSample:
                 rewards[i] = self.getReward(entry)
                 # rewards[i] = -(self.discount_rate) / (self.time - entry.evicted_time)
             self.adjustWeights(rewards)
+            del self.hist[oblock]
         
         if len(self.cache) == self.cache_size:
             evicted = self.evict()
