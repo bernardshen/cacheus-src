@@ -14,6 +14,7 @@ from .olecar import OLeCaR
 from .sample import Sample
 from .prioqueue import PrioQueue
 from .adasample import AdaSample
+from .paraadasample import ParaAdaSample
 
 def get_algorithm(alg_name):
     alg_name = alg_name.lower()
@@ -50,4 +51,6 @@ def get_algorithm(alg_name):
         return PrioQueue
     if alg_name == 'adasample':
         return AdaSample
+    if alg_name == 'paraadasample':
+        return ParaAdaSample
     return None

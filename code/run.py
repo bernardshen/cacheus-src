@@ -51,6 +51,20 @@ class AlgorithmTest:
             alg.pollution.Y
         ) if 'enable_pollution' in self.alg_args and self.alg_args[
             'enable_pollution'] else None
+        if self.algorithm == 'paraadasample':
+            alg.show_stats()
+        if self.algorithm in ['paraadasample', 'adasample', 'lecar', 'olecar']:
+            w_hist = alg.get_WHist()
+            fname = 'output/{}'.format(self.algorithm)
+            if self.algorithm in ['paraadasample', 'adasample']:
+                fname += '-{}'.format(self.alg_args['experts'])
+                fname += '-s{}'.format(self.alg_args['num_samples'])
+                fname += '-r{}'.format(self.alg_args['reward_type'])
+            if self.algorithm == 'paraadasample':
+                fname += '-c{}'.format(self.alg_args['num_clients'])
+            fname += '.json'
+            with open(fname, 'w') as f:
+                json.dump(w_hist, f)
 
     def run(self, config):
         time = round(timeit(self._run, number=1), 2)

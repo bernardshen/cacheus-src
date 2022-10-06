@@ -86,7 +86,7 @@ class LFUDAPriority(Priority):
 
 def get_priority(prio_name: str):
     prio_name = prio_name.lower()
-    print(prio_name)
+    # print(prio_name)
 
     if prio_name == 'lru':
         return LRUPriority

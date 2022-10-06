@@ -24,9 +24,10 @@ class AdaSample:
         self.cache_size = cache_size
         self.experts = ['lru', 'lfu']
         self.num_samples = 5
+        self.reward_type = 'olecar'
         
         print(self.experts, kwargs)
-        process_kwargs(self, kwargs, ['experts', 'num_samples'])
+        process_kwargs(self, kwargs, ['experts', 'num_samples', 'reward_type'])
 
         self.cache = RandomDict()
         self.prioInsts = [get_priority(i)() for i in self.experts]
@@ -49,6 +50,7 @@ class AdaSample:
 
         self.pollution = Pollutionator(cache_size, **kwargs)
         self.time = 0
+        self.WHist = []
 
     def __contains__(self, oblock):
         return oblock in self.cache
@@ -127,6 +129,14 @@ class AdaSample:
         reward = np.array(rewards, dtype=np.float32)
         self.W = self.W * np.exp(self.learning_rate * reward)
         self.W = self.W / np.sum(self.W)
+    
+    def getReward(self, entry: AdaSample_Entry):
+        if self.reward_type == 'olecar':
+            return -self.discount_rate / (self.time - entry.evicted_time)
+        elif self.reward_type == 'lecar':
+            return -self.discount_rate ** (self.time - entry.evicted_time)
+        assert(0)
+        return 0
 
     def miss(self, oblock):
         evicted = None
@@ -139,7 +149,8 @@ class AdaSample:
             for i in range(len(self.experts)):
                 if i not in entry.experts:
                     continue
-                rewards[i] = -(self.discount_rate) / (self.time - entry.evicted_time)
+                rewards[i] = self.getReward(entry)
+                # rewards[i] = -(self.discount_rate) / (self.time - entry.evicted_time)
             self.adjustWeights(rewards)
         
         if len(self.cache) == self.cache_size:
@@ -148,6 +159,9 @@ class AdaSample:
         self.addToCache(oblock, freq)
         
         return evicted
+    
+    def get_WHist(self):
+        return self.WHist
 
     def request(self, oblock, ts):
         miss = True
@@ -170,5 +184,8 @@ class AdaSample:
         self.pollution.update(self.time)
 
         op = CacheOp.INSERT if miss else CacheOp.HIT
+
+        if self.time % 50 == 0:
+            self.WHist.append([float(i) for i in list(self.W)])
 
         return op, evicted

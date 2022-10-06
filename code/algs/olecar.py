@@ -83,6 +83,8 @@ class OLeCaR:
         # Pollution
         self.pollution = Pollutionator(cache_size, **kwargs)
 
+        self.WHist = []
+
     # True if oblock is in cache (which LRU can represent)
     def __contains__(self, oblock):
         return oblock in self.lru
@@ -190,6 +192,9 @@ class OLeCaR:
         self.addToCache(oblock, freq)
 
         return evicted
+    
+    def get_WHist(self):
+        return self.WHist
 
     # Process and access request for the given oblock
     def request(self, oblock, ts):
@@ -219,5 +224,8 @@ class OLeCaR:
             self.pollution.incrementUniqueCount()
         self.pollution.setUnique(oblock)
         self.pollution.update(self.time)
+
+        if self.time % 50 == 0:
+            self.WHist.append([float(i) for i in self.W])
 
         return op, evicted
