@@ -85,7 +85,7 @@ class AlgorithmTest:
                           time)
 
     def writeCSV(self, filename, hits, ios, writes, filters, time):
-        with open(filename, 'a+') as csvfile:
+        with open(filename, 'a+', newline='') as csvfile:
             writer = csv.writer(csvfile,
                                 delimiter=',',
                                 quotechar='|',
@@ -163,6 +163,9 @@ if __name__ == '__main__':
 
     with open(sys.argv[1], 'r') as f:
         config = json.loads(f.read())
+    if config['traces'][0] == 'twitter-all':
+        config['traces'] = ["../traces/cluster{:03d}.twitter".format(i)
+            for i in range(10, 55)]
 
     # TODO revisit and cleanup
     if 'request_count_type' in config:

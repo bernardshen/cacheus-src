@@ -116,13 +116,14 @@ class ParaAdaSample:
             candidateW[candidates[i]] += self.client_new_W[cid][i]
         rand = np.random.rand()
         s = 0
+        candidateList = []
         for k, w in candidateW.items():
             s += w * (1 - self.learning_rate) + \
                  (self.learning_rate / len(candidateW))
             if rand <= s:
                 return k
-        assert(0)
-        return None
+            candidateList.append(k)
+        return candidateList[-1]
 
     def evict(self, cid):
         candidates = self.getEvictCandicates(cid)
@@ -214,7 +215,7 @@ class ParaAdaSample:
             acc += self.client_acc_cnt[i]
             misses += self.cleint_miss_cnt[i]
             panelties += self.client_panelty_cnt[i]
-        print(merge, acc, misses, panelties, merge/acc, merge/misses, merge/panelties)
+        print(merge, acc, misses, panelties, merge/(acc+1), merge/(misses+1), merge/(panelties+1))
 
 
     def get_WHist(self):
