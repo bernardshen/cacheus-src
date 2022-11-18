@@ -32,7 +32,7 @@ def run_worker(config: dict):
                 if isinstance(cache_size, float):
                     cache_size = math.floor(cache_size * count)
                     cache_size_label_type = config['request_count_type']
-                if cache_size < 10:
+                if cache_size < 3:
                     print(
                         "Cache size {} too small for trace {}. Calculated size is {}. Skipping"
                         .format(cache_size_label, trace_name, cache_size),
