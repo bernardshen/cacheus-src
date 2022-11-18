@@ -46,10 +46,10 @@ def run_worker(config: dict):
                                                        window_size, trace_name, config):
                         test.run(config)
 
-def gather_results(num_threads, out_fname):
+def gather_results(pid, num_threads, out_fname):
     lines = []
     for i in range(num_threads):
-        fname = os.path.join(PARA_DIR, "{}.csv".format(i))
+        fname = os.path.join(PARA_DIR, "{}-{}.csv".format(pid, i))
         with open(fname, 'r') as f:
             lines += f.readlines()
         os.remove(fname)
@@ -87,6 +87,7 @@ if __name__ == '__main__':
     # generate sub configs
     config_list = [config.copy() for _ in range(num_threads)]
     process_list = []
+    pid = os.getpid()
     for i in range(num_threads):
         st = i * (len(config['traces']) // num_threads)
         if i != num_threads - 1:
@@ -94,7 +95,7 @@ if __name__ == '__main__':
             config_list[i]['traces'] = config['traces'][st: ed]
         else:
             config_list[i]['traces'] = config['traces'][st: ]
-        config_list[i]['output_csv'] = 'para/{}.csv'.format(i)
+        config_list[i]['output_csv'] = 'para/{}-{}.csv'.format(pid, i)
         p = Process(target=run_worker, args=(config_list[i], ))
         p.start()
         process_list.append(p)
@@ -103,4 +104,4 @@ if __name__ == '__main__':
     progress = ProgressBar()
     for p in progress(process_list):
         p.join()
-    gather_results(num_threads, config['output_csv'])
+    gather_results(pid, num_threads, config['output_csv'])
