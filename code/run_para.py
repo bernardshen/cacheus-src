@@ -74,7 +74,7 @@ if __name__ == '__main__':
             for i in range(1, 55)]
         config['traces'].remove('twitter-all')
     for i, wl in enumerate(config['traces']):
-        if 'twitter' in wl:
+        if 'twitter' == wl[: 8]:
             twitter_id = wl.split('-')[1]
             config['traces'][i] = "../traces/twitter/cluster{}.twitter".format(twitter_id)
     
