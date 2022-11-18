@@ -73,6 +73,10 @@ if __name__ == '__main__':
         config['traces'] += ["../traces/twitter/cluster{:03d}.twitter".format(i)
             for i in range(1, 55)]
         config['traces'].remove('twitter-all')
+    if 'webmail-all' in config['traces']:
+        config['traces'] += ["../traces/webmail/webmail.cs.fiu.edu-110108-113008.{}.blkparse".format(i)
+            for i in range(1, 21)]
+        config['traces'].remove('webmail-all')
     for i, wl in enumerate(config['traces']):
         if 'twitter' == wl[: 8]:
             twitter_id = wl.split('-')[1]
