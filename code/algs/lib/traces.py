@@ -1,13 +1,18 @@
 from .optional_args import process_kwargs
+import random
 
 
 # Basic Trace Reader as Base Class
 class Trace:
-    def __init__(self, file, **kwargs):
+    def __init__(self, file, count=False, alg_args=None, **kwargs):
         # Duration (in Hours)
         self.duration = 0
+        self.para_clients = 1
 
         process_kwargs(self, kwargs, acceptable_kws=['duration'])
+
+        if count == False and 'para_clients' in alg_args:
+            self.para_clients = alg_args['para_clients']
 
         # Setup
         self.file = file
@@ -26,21 +31,42 @@ class Trace:
 
         # get ending index of file for progress
         f = open(self.file, 'r')
-        f.seek(0, 2)
-        self.end = f.tell()
+        self.lines = f.readlines()
+        self.client_lines = self.get_client_lines()
+        self.client_lines_idx = [0] * self.para_clients
+        self.end = len(self.lines)
+        print("Num client: ", self.para_clients)
         f.close()
+    
+    def get_client_lines(self):
+        clients = [[]] * self.para_clients
+        for i, l in enumerate(self.lines):
+            cid = i % self.para_clients
+            clients[cid].append(l)
+        return clients
+    
+    def get_line(self):
+        unfinished_clients = []
+        for cid, idx in enumerate(self.client_lines_idx):
+            if idx < len(self.client_lines[cid]):
+                unfinished_clients.append(cid)
+        cid = random.randint(0, len(unfinished_clients) - 1)
+        idx = self.client_lines_idx[cid]
+        ret_line = self.client_lines[cid][idx]
+        self.client_lines_idx[cid] += 1
+        return ret_line
 
     def readLine(self, line):
         yield int(line), False, False
 
     def read(self):
-        f = open(self.file, 'r')
+        cnt = 0
         try:
             while True:
-                line = f.readline()
+                line = self.get_line()
                 if not line: break
                 self.last_line = line
-                self.progress = round(100 * (f.tell() / self.end))
+                self.progress = round(100 * (cnt / self.end))
                 for lba, write, ts in self.readLine(line):
                     if lba == None: continue
 
@@ -51,9 +77,11 @@ class Trace:
                     self.unique.add(lba)
 
                     yield lba, write, ts
+                cnt += 1
+                if cnt == self.end:
+                    break
         except EOFError:
             pass
-        f.close()
 
     def num_requests(self):
         return self.requests

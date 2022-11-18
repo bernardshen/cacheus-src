@@ -23,7 +23,7 @@ class AlgorithmTest:
         self.window_size = window_size
         self.trace_type = identify_trace(trace_file)
         trace_reader = get_trace_reader(self.trace_type)
-        self.reader = trace_reader(trace_file, **kwargs)
+        self.reader = trace_reader(trace_file, alg_args=alg_args, **kwargs)
 
         self.misses = 0
         self.filters = 0
@@ -103,7 +103,7 @@ class AlgorithmTest:
 def runEntireTrace(trace_name, kwargs, title=None):
     trace_type = identify_trace(trace_name)
     trace_reader = get_trace_reader(trace_type)
-    reader = trace_reader(trace_name, **kwargs)
+    reader = trace_reader(trace_name, count=True, **kwargs)
 
     progress_bar = ProgressBar(progress_bar_size, title=title)
 
@@ -164,8 +164,8 @@ if __name__ == '__main__':
     with open(sys.argv[1], 'r') as f:
         config = json.loads(f.read())
     if config['traces'][0] == 'twitter-all':
-        config['traces'] = ["../traces/cluster{:03d}.twitter".format(i)
-            for i in range(10, 55)]
+        config['traces'] = ["../traces/twitter/cluster{:03d}.twitter".format(i)
+            for i in range(1, 55)]
 
     # TODO revisit and cleanup
     if 'request_count_type' in config:
