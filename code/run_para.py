@@ -71,7 +71,7 @@ if __name__ == '__main__':
         config = json.loads(f.read())
     if 'twitter-all' in config['traces']:
         config['traces'] += ["../traces/twitter/cluster{:03d}.twitter".format(i)
-            for i in range(1, 6)]
+            for i in range(1, 55)]
         config['traces'].remove('twitter-all')
     
     num_threads = int(sys.argv[2])
