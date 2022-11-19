@@ -112,6 +112,20 @@ class TwitterNTrace(Trace):
         write = op not in ['get', 'gets']
         yield key, write, ts
 
+class YCSBTrace(Trace):
+    _op  = 0
+    _key = 1
+    def inDuration(self, time):
+        return True
+
+    def readLine(self, line):
+        line = line.split(' ')
+        ts = 0
+        key = line[YCSBTrace._key][:-1]
+        op  = line[YCSBTrace._op]
+        write = op != 'READ'
+        yield key, write, ts
+
 class TwitterTrace(Trace):
     _ts         = 0
     _key        = 1
@@ -337,6 +351,8 @@ def get_trace_reader(trace_type):
         return TwitterTrace
     if trace_type == 'twittern':
         return TwitterNTrace
+    if trace_type == 'ycsb':
+        return YCSBTrace
     raise ValueError("Could not find trace reader for {}".format(trace_type))
 
 
@@ -359,6 +375,8 @@ def identify_trace(filename):
         return 'twitter'
     if filename.endswith('.twittern'):
         return 'twittern'
+    if filename.endswith('.ycsb'):
+        return 'ycsb'
     raise ValueError("Could not identify trace type of {}".format(filename))
 
 

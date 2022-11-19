@@ -166,6 +166,10 @@ if __name__ == '__main__':
     if config['traces'][0] == 'twitter-all':
         config['traces'] = ["../traces/twitter/cluster{:03d}.twitter".format(i)
             for i in range(1, 55)]
+    for i, wl in enumerate(config['traces']):
+        if wl[: 7] == 'twitter':
+            wl_id = wl.split('-')[1]
+            config['traces'][i] = "../traces/twitter/cluster{}.twitter".format(wl_id)
 
     # TODO revisit and cleanup
     if 'request_count_type' in config:
