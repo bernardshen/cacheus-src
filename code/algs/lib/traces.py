@@ -33,13 +33,13 @@ class Trace:
         f = open(self.file, 'r')
         self.lines = f.readlines()
         self.client_lines = self.get_client_lines()
-        self.client_lines_idx = [0] * self.para_clients
+        self.client_lines_idx = [0 for _ in range(self.para_clients)]
         self.end = len(self.lines)
         print("Num client: ", self.para_clients)
         f.close()
     
     def get_client_lines(self):
-        clients = [[]] * self.para_clients
+        clients = [[] for _ in range(self.para_clients)]
         for i, l in enumerate(self.lines):
             cid = i % self.para_clients
             clients[cid].append(l)
@@ -50,7 +50,8 @@ class Trace:
         for cid, idx in enumerate(self.client_lines_idx):
             if idx < len(self.client_lines[cid]):
                 unfinished_clients.append(cid)
-        cid = random.randint(0, len(unfinished_clients) - 1)
+        r = random.randint(0, len(unfinished_clients) - 1)
+        cid = unfinished_clients[r]
         idx = self.client_lines_idx[cid]
         ret_line = self.client_lines[cid][idx]
         self.client_lines_idx[cid] += 1
@@ -79,6 +80,8 @@ class Trace:
                     yield lba, write, ts
                 cnt += 1
                 if cnt == self.end:
+                    for i in range(self.para_clients):
+                        assert(self.client_lines_idx[i] == len(self.client_lines[i]))
                     break
         except EOFError:
             pass

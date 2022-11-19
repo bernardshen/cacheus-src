@@ -170,6 +170,9 @@ if __name__ == '__main__':
         if wl[: 7] == 'twitter':
             wl_id = wl.split('-')[1]
             config['traces'][i] = "../traces/twitter/cluster{}.twitter".format(wl_id)
+        if wl[: 7] == 'webmail':
+            wl_id = wl.split('-')[1]
+            config['traces'][i] = "../traces/webmail/webmail.cs.fiu.edu-110108-113008.{}.blkparse".format(wl_id)
 
     # TODO revisit and cleanup
     if 'request_count_type' in config:
