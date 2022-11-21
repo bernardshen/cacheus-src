@@ -86,15 +86,16 @@ if __name__ == '__main__':
 
     # generate sub configs
     config_list = [config.copy() for _ in range(num_threads)]
+    for i in range(num_threads):
+        config_list[i]['traces'] = []
+    # assign workload   
+    for i, wl in enumerate(config['traces']):
+        tid = i % num_threads
+        config_list[tid]['traces'].append(wl)
+
     process_list = []
     pid = os.getpid()
     for i in range(num_threads):
-        st = i * (len(config['traces']) // num_threads)
-        if i != num_threads - 1:
-            ed = (i + 1) * (len(config['traces']) // num_threads)
-            config_list[i]['traces'] = config['traces'][st: ed]
-        else:
-            config_list[i]['traces'] = config['traces'][st: ]
         config_list[i]['output_csv'] = 'para/{}-{}.csv'.format(pid, i)
         p = Process(target=run_worker, args=(config_list[i], ))
         p.start()

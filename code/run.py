@@ -24,6 +24,8 @@ class AlgorithmTest:
         self.trace_type = identify_trace(trace_file)
         trace_reader = get_trace_reader(self.trace_type)
         self.reader = trace_reader(trace_file, alg_args=alg_args, **kwargs)
+        if self.trace_file == 'mix':
+            self.alg_args['lru_lfu_num'] = kwargs['lru_lfu_num']
 
         self.misses = 0
         self.filters = 0
@@ -126,6 +128,9 @@ def getReuseCount(trace_name, kwargs):
 
 
 def generateTraceNames(trace):
+    if trace == 'mix': 
+        yield trace
+        return
     if trace.startswith('~'):
         trace = os.path.expanduser(trace)
 

@@ -20,6 +20,17 @@ class Trace:
         self.reuse = set()
         self.requests = 0
         self.start_time = 0
+
+        # for mix workload
+        self.lru_lfu_fname = []
+        self.lru_lfu_num = []
+        if self.file == 'mix' and count == False:
+            process_kwargs(self, kwargs, acceptable_kws=['lru_lfu_fname', 'lru_lfu_num'])
+            self.para_clients = self.lru_lfu_num[0] + self.lru_lfu_num[1]
+        if self.file == 'mix' and count == True:
+            process_kwargs(self, kwargs, acceptable_kws=['lru_lfu_fname', 'lru_lfu_num'])
+            self.para_clients = 1
+            self.file = self.lru_lfu_fname[1]
         
         self.start_tick = 0
         self.next_tick = 0
@@ -30,20 +41,47 @@ class Trace:
         self.progress = 0
 
         # get ending index of file for progress
-        f = open(self.file, 'r')
-        self.lines = f.readlines()
         self.client_lines = self.get_client_lines()
         self.client_lines_idx = [0 for _ in range(self.para_clients)]
-        self.end = len(self.lines)
+        self.end = self.get_end()
         print("Num client: ", self.para_clients)
-        f.close()
     
     def get_client_lines(self):
-        clients = [[] for _ in range(self.para_clients)]
-        for i, l in enumerate(self.lines):
-            cid = i % self.para_clients
-            clients[cid].append(l)
-        return clients
+        if self.file != 'mix':
+            with open(self.file, 'r') as f:
+                lines = f.readlines()
+            clients = [[] for _ in range(self.para_clients)]
+            for i, l in enumerate(lines):
+                cid = i % self.para_clients
+                clients[cid].append(l)
+            return clients
+        else:
+            # deal with lru clients
+            with open(self.lru_lfu_fname[0], 'r') as f:
+                lru_lines = f.readlines()
+            n_lru = self.lru_lfu_num[0]
+            n_lfu = self.lru_lfu_num[1]
+            lru_clients = [[] for _ in range(n_lru)]
+            for i, l in enumerate(lru_lines):
+                cid = i % self.para_clients
+                if cid < n_lru: lru_clients[cid].append(l)
+            # deal with lfu clients
+            with open(self.lru_lfu_fname[1], 'r') as f:
+                lfu_lines = f.readlines()
+            lfu_clients = [[] for _ in range(n_lfu)]
+            for i, l in enumerate(lfu_lines):
+                cid = i % self.para_clients
+                if cid < n_lfu: lfu_clients[cid].append(l)
+            return lru_clients + lfu_clients
+    
+    def get_end(self):
+        s = 0
+        for cid in range(self.para_clients):
+            s += len(self.client_lines[cid])
+        if self.file != 'mix':
+            with open(self.file, 'r') as f:
+                assert(s == len(f.readlines()))
+        return s
     
     def get_line(self):
         unfinished_clients = []
@@ -360,6 +398,8 @@ def get_trace_reader(trace_type):
 
 
 def identify_trace(filename):
+    if filename == "mix":
+        return 'synth'
     if filename.endswith('.blkparse'):
         return 'fiu'
     if filename.endswith('.csv'):

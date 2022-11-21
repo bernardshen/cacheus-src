@@ -154,10 +154,7 @@ class ParaAdaSample:
         self.client_new_W[cid] = self.client_new_W[cid] / np.sum(self.client_new_W[cid])
 
         # Occationally sync global
-        if np.random.rand() < 0.2:
-            self.client_old_W[cid] = self.W
-        err = np.sum(np.abs(self.client_new_W[cid] - self.client_old_W[cid]))
-        if err > self.merge_thresh or np.random.rand() < 0.1:
+        if len(self.client_reward_hist[cid]) == 100:
             for r in self.client_reward_hist[cid]:
                 r = np.array(r, dtype=np.float32)
                 self.W = self.W * np.exp(self.learning_rate * r)
